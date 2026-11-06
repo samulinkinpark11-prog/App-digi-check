@@ -17,6 +17,11 @@ jobs:
       - run: mkdir www && cp index.html www/
       - run: npm install
       - run: npx cap add android
+      - name: Icono
+        run: |
+          mkdir -p assets
+          cp icon-only.png icon-foreground.png icon-background.png assets/
+          npx --yes @capacitor/assets generate --android
       - name: Permisos
         run: |
           sed -i 's#<application#<uses-permission android:name="android.permission.CAMERA" />\n<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" />\n<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />\n<application#' android/app/src/main/AndroidManifest.xml
