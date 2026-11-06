@@ -1,0 +1,74 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DCDIGICheck</title><style>
+:root{--bg:#f4f6f8;--card:#fff;--tx:#1b2430;--mu:#667;--ac:#0a6cff;--bd:#d8dee6}
+@media(prefers-color-scheme:dark){:root{--bg:#12161c;--card:#1d242d;--tx:#eef2f6;--mu:#9aa6b3;--bd:#33404e}}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--tx)}
+header{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--bd);padding:10px 14px}
+h1{font-size:18px;margin:0}.bar{height:12px;border-radius:6px;background:var(--bd);overflow:hidden;margin-top:8px}#fill{height:100%;width:0;background:hsl(0,80%,50%);transition:.3s}
+main{padding:14px;max-width:640px;margin:auto}.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:12px}
+label{display:block;font-size:13px;color:var(--mu);margin:8px 0 4px}input,select{width:100%;padding:12px;border-radius:8px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);font-size:16px}
+button{padding:12px 14px;border:0;border-radius:8px;background:var(--ac);color:#fff;font-size:15px;cursor:pointer}button.s{background:var(--bd);color:var(--tx)}button.w{width:100%;margin-top:12px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.th{position:relative}.th img{width:70px;height:70px;object-fit:cover;border-radius:6px}.th b{position:absolute;left:2px;bottom:2px;background:#000a;color:#fff;font-size:11px;padding:1px 4px;border-radius:4px}.th i{position:absolute;right:0;top:0;background:#c00;color:#fff;border-radius:50%;width:20px;height:20px;text-align:center;font-style:normal;font-size:13px;line-height:20px}
+.hint{font-size:13px;color:var(--mu)}.ok{border-color:#2a9d4a}.na{opacity:.6}
+#modal{position:fixed;inset:0;background:#000e;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:9;gap:10px}canvas{max-width:96vw;max-height:72vh;touch-action:none}
+</style></head><body>
+<header><h1>DCDIGICheck <span id="who" class="hint"></span></h1><div class="bar" id="bar" hidden><div id="fill"></div></div></header>
+<main id="app"></main>
+<div id="modal"><canvas id="cv"></canvas><div class="hint" style="color:#ddd">Arrastra para elegir la zona a conservar</div><div class="row"><button class="s" onclick="cropCancel()">Cancelar</button><button onclick="cropOk()">Recortar y guardar</button></div></div>
+<script>
+const ITEMS=["Central (fachada)","Sala OBA (generales de sala)","Tablero eléctrico sala OBA (abierto y cerrado)","Disyuntores asignados rack DIGI (frontal etiquetado y de cerca)","Tendido eléctrico externo (tubos de cuadro a rack)","PDU's y cableado eléctrico interno (abiertas y cerradas)","Frontal / Trasera rack (completo, abierto y cerrado)","Superior rack y bandeja portafibras (bajada de tubos)","Bandeja y puertos ODF ext. anillo (infra, PTRO, ODF ext.)","OLT's (frontal completa)","BackBone – ATN's (frontal y trasera, sin inclinación)","BackBone – GSD's y GSC (frontal y trasera, sin inclinación)","Servidores PPPoE I y II (frontal y trasera, sin inclinación)","Regleta e inversor DC/AC (de cerca)","Router LTE (de cerca)"];
+const TYPES=["MP Q1","MP Q2","MP Q3","MP Q4","Ampliación de equipos o puertos","Swap de equipos","Instalación de nueva cabecera","Otros"];
+let S={user:null,path:"",job:{type:TYPES[0],site:""}},P=[],NA=[],cur=-1,store={};
+try{S.user=JSON.parse(localStorage.getItem('dc_user'));S.path=localStorage.getItem('dc_path')||""}catch(e){}
+const $=id=>document.getElementById(id),app=$('app');
+function save(){try{localStorage.setItem('dc_user',JSON.stringify(S.user));localStorage.setItem('dc_path',S.path)}catch(e){}}
+function reset(){P=ITEMS.map(()=>[]);NA=ITEMS.map(()=>false)}reset();
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function home(){$('bar').hidden=true;$('who').textContent=S.user?'· '+S.user.name:'';
+if(!S.user)return app.innerHTML=`<div class="card"><b>Registro de empleado</b><label>Nombre y apellidos</label><input id="n"><label>ID de empleado</label><input id="e"><button class="w" onclick="reg()">Entrar</button></div>`;
+if(!S.path)return app.innerHTML=`<div class="card"><b>Ubicación de «Almacenamiento Fotos»</b><p class="hint">Escribe la carpeta dentro de Documentos del móvil donde se creará «Almacenamiento Fotos». Se puede cambiar luego en Ajustes.</p><input id="p" placeholder="p. ej. DIGI"><button class="w" onclick="setPath()">Guardar</button></div>`;
+app.innerHTML=`<div class="card"><label>Tipo de trabajo</label><select id="t">${TYPES.map(t=>`<option ${t==S.job.type?'selected':''}>${t}</option>`).join('')}</select><label>Cabecera o Data Center</label><input id="s" value="${esc(S.job.site)}" placeholder="p. ej. MONTEQUINTO"><button class="w" onclick="start()">Abrir checklist</button><button class="w s" onclick="settings()">Ajustes</button></div>`}
+function reg(){const n=$('n').value.trim(),e=$('e').value.trim();if(!n||!e)return alert('Completa los datos');S.user={name:n,id:e};save();home()}
+function setPath(){const p=$('p').value.trim();if(!p)return alert('Indica una ruta');S.path=p;save();home()}
+function settings(){app.innerHTML=`<div class="card"><b>Ajustes</b><label>Carpeta base</label><input id="p" value="${esc(S.path)}"><button class="w" onclick="setPath()">Guardar</button><button class="w s" onclick="home()">Volver</button></div>`}
+function start(){const t=$('t').value,s=$('s').value.trim().toUpperCase();if(!s)return alert('Indica la cabecera o data center');S.job={type:t,site:s};reset();list()}
+function done(i){return NA[i]||P[i].length>0}
+function list(){$('bar').hidden=false;const d=ITEMS.filter((_,i)=>done(i)).length,f=d/15;$('fill').style.width=f*100+'%';$('fill').style.background=`hsl(${120*f},80%,45%)`;
+app.innerHTML=`<p class="hint"><b>${esc(S.job.type)}</b> · ${esc(S.job.site)} · ${d}/15 puntos</p>`+ITEMS.map((t,i)=>`<div class="card ${done(i)?'ok':''} ${NA[i]?'na':''}"><b>${i+1}. ${t}</b><div class="row">${P[i].map((p,j)=>`<div class="th"><img src="${p.url}"><b>${i+1}${String.fromCharCode(97+j)}</b><i onclick="del(${i},${j})">×</i></div>`).join('')}</div><div class="row"><button ${NA[i]?'disabled':''} onclick="cam(${i})">📷 Cámara</button><button class="s" onclick="toggleNA(${i})">${NA[i]?'✔ No aplica':'No aplica'}</button></div></div>`).join('')+`<button class="w" onclick="validate()">Validar</button><button class="w s" onclick="home()">Salir sin guardar</button><input type="file" id="f" accept="image/*" capture="environment" hidden>`;
+$('f').onchange=e=>{if(e.target.files[0])openCrop(e.target.files[0]);e.target.value=''}}
+function cam(i){cur=i;$('f').click()}
+function toggleNA(i){NA[i]=!NA[i];list()}
+function del(i,j){P[i].splice(j,1);list()}
+let img,sel,drag;const cv=$('cv'),cx=cv.getContext('2d');
+function openCrop(f){img=new Image();img.onload=()=>{const k=Math.min(1,1200/Math.max(img.width,img.height));cv.width=img.width*k;cv.height=img.height*k;sel={x:cv.width*.05,y:cv.height*.05,w:cv.width*.9,h:cv.height*.9};draw();$('modal').style.display='flex'};img.src=URL.createObjectURL(f)}
+function draw(){cx.clearRect(0,0,cv.width,cv.height);cx.drawImage(img,0,0,cv.width,cv.height);cx.fillStyle='#0008';cx.fillRect(0,0,cv.width,cv.height);cx.drawImage(img,sel.x*img.width/cv.width,sel.y*img.height/cv.height,sel.w*img.width/cv.width,sel.h*img.height/cv.height,sel.x,sel.y,sel.w,sel.h);cx.strokeStyle='#0f0';cx.lineWidth=3;cx.strokeRect(sel.x,sel.y,sel.w,sel.h)}
+function pt(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*cv.width/r.width,y:(e.clientY-r.top)*cv.height/r.height}}
+cv.onpointerdown=e=>{drag=pt(e);cv.setPointerCapture(e.pointerId)};
+cv.onpointermove=e=>{if(!drag)return;const p=pt(e);sel={x:Math.max(0,Math.min(drag.x,p.x)),y:Math.max(0,Math.min(drag.y,p.y)),w:Math.min(cv.width,Math.abs(p.x-drag.x)),h:Math.min(cv.height,Math.abs(p.y-drag.y))};draw()};
+cv.onpointerup=()=>drag=null;
+function cropCancel(){$('modal').style.display='none'}
+function cropOk(){if(sel.w<10||sel.h<10)return alert('Selecciona una zona mayor');const sx=img.width/cv.width,sy=img.height/cv.height,o=document.createElement('canvas');o.width=sel.w*sx;o.height=sel.h*sy;o.getContext('2d').drawImage(img,sel.x*sx,sel.y*sy,o.width,o.height,0,0,o.width,o.height);
+o.toBlob(b=>{P[cur].push({blob:b,url:URL.createObjectURL(b),time:new Date().toISOString()});NA[cur]=false;cropCancel();list()},'image/jpeg',.9)}
+function validate(){const miss=ITEMS.map((_,i)=>i+1).filter(i=>!done(i-1));
+if(miss.length)return alert('Faltan por revisar los puntos: '+miss.join(', '));
+if(!P.some(a=>a.length))return alert('Debes subir al menos una foto.');
+if(confirm('¿Quieres revisar el checklist antes de validar?\n\nAceptar = revisar · Cancelar = validar ya'))return;
+final()}
+const T=(()=>{const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+function crc(d){let c=-1;for(let i=0;i<d.length;i++)c=T[(c^d[i])&255]^(c>>>8);return(c^-1)>>>0}
+function zip(files){const loc=[],cen=[],en=new TextEncoder();let off=0;for(const f of files){const n=en.encode(f.name),c=crc(f.data),s=f.data.length;
+const h=new DataView(new ArrayBuffer(30));h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x800,true);h.setUint32(14,c,true);h.setUint32(18,s,true);h.setUint32(22,s,true);h.setUint16(26,n.length,true);loc.push(new Uint8Array(h.buffer),n,f.data);
+const d=new DataView(new ArrayBuffer(46));d.setUint32(0,0x02014b50,true);d.setUint16(4,20,true);d.setUint16(6,20,true);d.setUint16(8,0x800,true);d.setUint32(16,c,true);d.setUint32(20,s,true);d.setUint32(24,s,true);d.setUint16(28,n.length,true);d.setUint32(42,off,true);cen.push(new Uint8Array(d.buffer),n);off+=30+n.length+s}
+const cs=cen.reduce((a,b)=>a+b.length,0),e=new DataView(new ArrayBuffer(22));e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cs,true);e.setUint32(16,off,true);return new Blob([...loc,...cen,new Uint8Array(e.buffer)],{type:'application/zip'})}
+async function b64(u){let t='';for(let i=0;i<u.length;i+=8192)t+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(t)}
+async function final(){const now=new Date(),p2=n=>String(n).padStart(2,'0'),ymd=''+now.getFullYear()+p2(now.getMonth()+1)+p2(now.getDate());
+const folder=`${ymd}_${S.job.site} ${S.job.type}`,base=S.path+'/Almacenamiento Fotos/'+folder+'/',en=new TextEncoder(),files=[],log=[];
+for(let i=0;i<15;i++){if(NA[i])log.push(`${i+1}: No aplica`);for(let j=0;j<P[i].length;j++){const nm=`${i+1}${String.fromCharCode(97+j)}.jpg`;files.push({name:base+nm,data:new Uint8Array(await P[i][j].blob.arrayBuffer())});log.push(`${nm} | ${S.user.name} (${S.user.id}) | ${P[i][j].time} | ${S.job.site}`)}}
+files.push({name:base+'registro.txt',data:en.encode(log.join('\n'))});
+let where='ZIP descargado';const FS=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.Filesystem;
+if(FS){try{await FS.requestPermissions()}catch(e){}
+const w=async d=>{for(const f of files)await FS.writeFile({path:f.name,directory:d,data:await b64(f.data),recursive:true})};
+try{await w('DOCUMENTS');where='Documentos'}catch(e){try{await w('EXTERNAL');where='Android/data/…/files'}catch(e2){return alert('Error al guardar: '+(e2.message||e2))}}}
+else{const a=document.createElement('a');a.href=URL.createObjectURL(zip(files));a.download=folder+'.zip';document.body.appendChild(a);a.click();a.remove()}
+alert('Checklist validado.\nGuardado en '+where+'\n'+base);reset();home()}
+home();
+</script></body></html>
