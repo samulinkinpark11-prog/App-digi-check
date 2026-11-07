@@ -50,7 +50,7 @@ button.s{background:var(--bd);color:var(--tx);box-shadow:none}button.w{width:100
 <path d="M304 348l30 30 56-64" fill="none" stroke="#fff" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M290 310a70 70 0 0 1 40-28" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="8" stroke-linecap="round"/></symbol></svg>
 <header><div class="hd"><svg width="40" height="40"><use href="#lg"/></svg><div><h1>DCDIGICheck</h1><div id="who" class="hint"></div></div><span class="cnt" id="cnt"></span></div><div class="bar" id="bar" hidden><div id="fill"></div></div></header>
-<main id="app"></main><div class="fb" id="fb"></div><div id="cm"><video id="cv2" autoplay playsinline muted></video><div class="ch"><b id="ct2"></b><button class="s" id="fm" onclick="toggleFast()">Modo rápido</button></div><div class="cs" id="cs"></div><div class="cf"><span class="cn2" id="cn"></span><button id="sh" class="shut" onclick="shoot()"></button><button onclick="camClose()">Listo</button></div></div><div id="dl"><div class="dc"><p id="dm"></p><div class="row"><button id="dno" class="s"></button><button id="dok"></button></div></div></div><div id="sp"><svg width="120" height="120"><use href="#lg"/></svg></div>
+<main id="app"></main><div class="fb" id="fb"></div><div id="cm"><video id="cv2" autoplay playsinline muted></video><div class="ch"><b id="ct2"></b><button class="s" id="fm" onclick="toggleFast()">Rápido · 3 MP</button></div><div class="cs" id="cs"></div><div class="cf"><span class="cn2" id="cn"></span><button id="sh" class="shut" onclick="shoot()"></button><button onclick="camClose()">Listo</button></div></div><div id="dl"><div class="dc"><p id="dm"></p><div class="row"><button id="dno" class="s"></button><button id="dok"></button></div></div></div><div id="sp"><svg width="120" height="120"><use href="#lg"/></svg></div>
 <div id="vw"><div class="vh"><b id="vt"></b><button class="s ib" onclick="closeV()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div><div id="vc"><img id="vi" onclick="zoomV()"></div><div class="vf"><button class="s ib" onclick="stepV(-1)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button><button class="s ib" onclick="editV()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.13 1 6 16a2 2 0 0 0 2 2h15M1 6.13 16 6a2 2 0 0 1 2 2v15"/></svg></button><button class="s" onclick="delV()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2m-1 0v14H9V6M10 11v6M14 11v6"/></svg> Borrar</button><button class="s ib" onclick="stepV(1)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button></div></div>
 <div id="modal"><canvas id="cv"></canvas><div class="hint" style="color:#ddd">Arrastra para elegir la zona a conservar</div><div class="row"><button class="s" onclick="cropCancel()">Cancelar</button><button onclick="cropOk()">Recortar y guardar</button></div></div>
 <script>
@@ -83,7 +83,7 @@ function card(i){return `<div class="card ${done(i)?'ok':''} ${NA[i]?'na':''}"><
 function list(){persist();$('bar').hidden=false;const d=ITEMS.filter((_,i)=>done(i)).length,f=d/15;$('fill').style.width=f*100+'%';$('fill').style.background=`hsl(${120*f},80%,45%)`;$('cnt').style.display='block';$('cnt').textContent=d+'/15';
 app.innerHTML=`<div class="hint" style="margin:2px 4px"><b style="color:var(--tx)">${esc(S.job.type)}</b> · ${esc(S.job.site)}</div>`+GR.map(([n,ix])=>`<div class="sec">${n}<span>${ix.filter(k=>done(k)).length}/${ix.length}</span></div>`+ix.map(card).join('')).join('')+`<input type="file" id="f" accept="image/*" multiple hidden>`;
 $('fb').style.display='flex';$('fb').innerHTML=`<button class="s" onclick="exitL()">${ic('left')} Salir</button><button onclick="validate()" style="${d==15?'':'filter:saturate(.45)'}">${ic('check')} Validar · ${d}/15</button>`;
-$('f').onchange=async e=>{for(const fl of e.target.files)await addBlob(cur,fl);e.target.value='';list()}}
+$('f').onchange=async e=>{for(const fl of e.target.files)addBlob(cur,fl);e.target.value='';list();runAQ().then(refresh)}}
 function success(nf,nn,folder,where,base){$('bar').hidden=true;$('fb').style.display='none';$('cnt').style.display='none';app.innerHTML=`<div class="okscreen"><div class="big">${ic('check',48)}</div><h2>Checklist validado</h2><p class="hint">${esc(folder)}</p><div class="stats"><div><b>${nf}</b><span>fotos</span></div><div><b>${nn}</b><span>no aplica</span></div><div><b>15/15</b><span>puntos</span></div></div><p class="hint">Guardado en ${esc(where)}<br>${esc(base)}</p><button class="w" onclick="home()">Volver al inicio</button></div>`}
 function cam(i){cur=i;openCam(i)}
 function toggleNA(i){NA[i]=!NA[i];list()}
@@ -134,7 +134,7 @@ function idb(){return new Promise((res,rej)=>{const q=indexedDB.open('dcd',1);q.
 async function dbSet(v){try{const d=await idb(),st=d.transaction('d','readwrite').objectStore('d');v===null?st.delete('cur'):st.put(v,'cur')}catch(e){}}
 async function dbGet(){try{const d=await idb();return await new Promise(r=>{const q=d.transaction('d').objectStore('d').get('cur');q.onsuccess=()=>r(q.result||null);q.onerror=()=>r(null)})}catch(e){return null}}
 let pTimer=null;function persist(){clearTimeout(pTimer);pTimer=setTimeout(doPersist,1500)}
-function doPersist(){if(!active)return;if(!P.some(a=>a.length)&&!NA.some(x=>x))return void dbSet(null);dbSet({job:S.job,NA:NA.slice(),P:P.map(a=>a.map(p=>({blob:p.blob,time:p.time,q:p.q,th:p.th})))})}
+function doPersist(){if(!active)return;if(!P.some(a=>a.length)&&!NA.some(x=>x))return void dbSet(null);dbSet({job:S.job,NA:NA.slice(),P:P.map(a=>a.filter(p=>p.blob).map(p=>({blob:p.blob,time:p.time,q:p.q,th:p.th})))})}
 document.addEventListener('visibilitychange',()=>{if(document.hidden){clearTimeout(pTimer);doPersist()}});
 async function resume(){S.job=DR.job;NA=DR.NA;P=DR.P.map(a=>a.map(p=>({blob:p.blob,time:p.time,q:p.q,th:p.th,url:URL.createObjectURL(p.blob)})));active=true;await Promise.all(P.flat().filter(p=>!p.th).map(p=>analyze(p,true)));list()}
 async function discard(){if(await C('¿Descartar el borrador y sus fotos?','Descartar','Cancelar')){await dbSet(null);DR=null;home()}}
@@ -147,20 +147,25 @@ let ST=null,IC=null,CI=0,busy=false,ED=null;
 function grab(){const v=$('cv2'),c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;c.getContext('2d').drawImage(v,0,0);return c}
 function thumb(c){const t=document.createElement('canvas');t.width=160;t.height=Math.max(1,Math.round(c.height*160/c.width));t.getContext('2d').drawImage(c,0,0,t.width,t.height);return t.toDataURL('image/jpeg',.7)}
 async function analyze(p,keep){try{const bm=await createImageBitmap(p.blob,{resizeWidth:256,resizeQuality:'low'});if(!keep)p.q=quality(bm,p.blob.size).issues;if(!p.th){const c=document.createElement('canvas');c.width=160;c.height=Math.max(1,Math.round(bm.height*160/bm.width));c.getContext('2d').drawImage(bm,0,0,c.width,c.height);p.th=c.toDataURL('image/jpeg',.7)}if(bm.close)bm.close()}catch(e){}}
-function addBlob(i,b,th){const p={blob:b,url:URL.createObjectURL(b),time:new Date().toISOString(),q:[],th:th||null};P[i].push(p);NA[i]=false;return analyze(p,false)}
+let MAXP,pend=0;const AQ=[];
+function addBlob(i,b){const p={blob:b,url:URL.createObjectURL(b),time:new Date().toISOString(),q:[],th:null};P[i].push(p);NA[i]=false;AQ.push(p);return p}
+async function runAQ(){while(AQ.length)await analyze(AQ.shift(),false)}
+function refresh(){if($('fb').style.display==='flex'&&$('vw').style.display!=='flex'&&$('cm').style.display!=='block'&&$('modal').style.display!=='flex')list()}
+function small(c){const t=document.createElement('canvas');t.width=256;t.height=Math.max(1,Math.round(c.height*256/c.width));t.getContext('2d').drawImage(c,0,0,t.width,t.height);return t}
 async function openCam(i){CI=i;try{if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw 0;
-ST=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:4096},height:{ideal:3072}},audio:false});
-const tr=ST.getVideoTracks()[0];IC=window.ImageCapture?new ImageCapture(tr):null;const v=$('cv2');v.srcObject=ST;await v.play().catch(()=>{});
+ST=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1440},frameRate:{ideal:30}},audio:false});
+const tr=ST.getVideoTracks()[0];IC=window.ImageCapture?new ImageCapture(tr):null;MAXP=undefined;if(IC)IC.getPhotoCapabilities().then(c=>{if(c.imageWidth&&c.imageHeight)MAXP={imageWidth:c.imageWidth.max,imageHeight:c.imageHeight.max}}).catch(()=>{});const v=$('cv2');v.srcObject=ST;await v.play().catch(()=>{});
 $('ct2').textContent=(i+1)+'. '+ITEMS[i].split(' (')[0];camUpd();$('cm').style.display='block'}catch(e){camStop();$('f').click()}}
 function camStop(){if(ST)ST.getTracks().forEach(t=>t.stop());ST=null;IC=null}
-function camUpd(){$('cn').textContent=P[CI].length+' fotos';$('cs').innerHTML=P[CI].slice(-5).map(p=>`<img src="${p.th||p.url}">`).join('');persist()}
-function camClose(){camStop();$('cm').style.display='none';list()}
+function camUpd(){$('cn').textContent=P[CI].length+' fotos';$('cs').innerHTML=P[CI].slice(-5).map(p=>`<img src="${p.th||p.url}">`).join('')}
+async function camClose(){camStop();$('cm').style.display='none';while(pend)await new Promise(r=>setTimeout(r,30));list();runAQ().then(refresh)}
 let FAST=true;
-function toggleFast(){FAST=!FAST;$('fm').textContent=FAST?'Modo rápido':'Máx. calidad'}
+function toggleFast(){FAST=!FAST;$('fm').textContent=FAST?'Rápido · 3 MP':'Máx. calidad'}
 function flashCam(){$('cm').classList.add('fl');setTimeout(()=>$('cm').classList.remove('fl'),90)}
-async function shoot(){if(busy||!ST)return;busy=true;flashCam();
-if(!FAST&&IC){try{const b=await IC.takePhoto();addBlob(CI,b);camUpd();busy=false;return}catch(e){}}
-const c=grab(),th=thumb(c);busy=false;c.toBlob(b=>{if(b){addBlob(CI,b,th);camUpd()}},'image/jpeg',.9)}
+async function shoot(){if(busy||!ST)return;busy=true;flashCam();if(navigator.vibrate)navigator.vibrate(15);
+if(!FAST&&IC){try{const b=await IC.takePhoto(MAXP);addBlob(CI,b);camUpd();busy=false;return}catch(e){}}
+const c=grab(),sc=small(c),p={blob:null,url:null,time:new Date().toISOString(),q:[],th:sc.toDataURL('image/jpeg',.7)};P[CI].push(p);NA[CI]=false;camUpd();pend++;busy=false;
+c.toBlob(b=>{p.blob=b;p.url=URL.createObjectURL(b);p.q=quality(sc,b.size).issues;pend--},'image/jpeg',.9)}
 function editV(){const p=P[V.i][V.j];ED={i:V.i,j:V.j};$('vw').style.display='none';openCrop(p.blob)}
 dbGet().then(d=>{DR=d;home()});
 </script></body></html>
