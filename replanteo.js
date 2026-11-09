@@ -19,8 +19,8 @@ window.generarReplanteo=async function(o){
     if(blobs.length){
       const items=[];for(const b of blobs)items.push(await H.prep(b,1600,.85));
       const pos=H.layout(items,X,Y,W,Hh,110000);
-      items.forEach((it,k)=>{const nm=`ppt/media/rp_${s}_${k+1}.jpeg`;zip.file(nm,it.data,{createFolders:false});const id='rIdF'+(k+1);
-        rels+=`<Relationship Id="${id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/rp_${s}_${k+1}.jpeg"/>`;
+      items.forEach((it,k)=>{const nm=`ppt/media/rp_${s}_${k+1}.jpg`;zip.file(nm,it.data,{createFolders:false});const id='rIdF'+(k+1);
+        rels+=`<Relationship Id="${id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/rp_${s}_${k+1}.jpg"/>`;
         const p=pos[k];add+=`<p:pic><p:nvPicPr><p:cNvPr id="${200+k}" name="Foto ${k+1}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="${id}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm><a:off x="${p.x}" y="${p.y}"/><a:ext cx="${p.w}" cy="${p.h}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`})
     }else if(o.na&&o.na[s]){
       const m=x.match(/<p:sp>(?:(?!<\/p:sp>).)*?Subt[^>]*>(?:(?!<\/p:sp>).)*<\/p:sp>/s);
@@ -31,7 +31,11 @@ window.generarReplanteo=async function(o){
     // notes
     if(s>=4){const tk='{{N'+s+'}}',m=x.match(new RegExp('<a:p>(?:(?!</a:p>).)*'+tk.replace(/[{}]/g,'\\$&')+'.*?</a:p>','s'));
       if(m){const lines=String(o.notes&&o.notes[s]||'').split('\n').map(t=>t.trim()).filter(Boolean);if(!lines.length)lines.push(' ');
-        x=x.replace(m[0],lines.map(l=>m[0].replace(tk,H.esc(l))).join(''))}}
+        const big=s>=10,top=big?5462415:(s===7?5681599:5786265),fh=big?1077482:746867,avail=(5396758+fh-top)/12700,fixed=7.2+(big?16.8:0),width=807,sz0=big?1200:1400,min=big?800:900;
+        let sz=sz0,need=0;for(;;){const cw=sz/100*(big?.58:.53),lh=sz/100*1.2;let n=0;for(const l of lines)n+=Math.max(1,Math.ceil(l.length*cw/width));need=n*lh+fixed;if(need<=avail||sz<=min)break;sz-=50}
+        if(need>avail){const extra=Math.round((need-avail)*12700)+40000,ncy=Math.min(fh+extra,6700000-5396758);x=x.replace(new RegExp('(name="Rect[^"]*"(?:(?!</p:sp>).)*?<a:ext cx="10439602" cy=")'+fh+'(")','s'),'$1'+ncy+'$2')}
+        const para=m[0].replace(/sz="\d+"/g,'sz="'+sz+'"');
+        x=x.replace(m[0],lines.map(l=>para.replace(tk,H.esc(l))).join(''))}}
     x=x.replace('</p:spTree>',add+'</p:spTree>');r=r.replace('</Relationships>',rels+'</Relationships>');
     zip.file(sp,x);zip.file(rp,r)
   }
