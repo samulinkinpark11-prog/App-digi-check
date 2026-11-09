@@ -75,9 +75,9 @@ window.generarReportaje=async function(o){
   }
   { const lines=[];const ex=[['Bornero instalado','Bornero pendiente de instalar'],['Bandeja pasacables bajo GSM instalada','Bandeja pasacables bajo GSM pendiente de instalar'],['Equipos separados entre sí (ventilación)','Equipos pendientes de separar']];
     (o.ans||[]).forEach((a,k)=>{if(a==='si'||a==='no')lines.push(ex[k]?ex[k][a==='si'?0:1]:null)});
-    const L=lines.filter(Boolean);if(!L.length)L.push('Sin observaciones');
+    const L=lines.filter(Boolean).concat(o.noteLines||[]);if(!L.length)L.push('Sin observaciones');const fz=L.length>12?1200:L.length>8?1500:L.length>5?1800:2000;
     let x=await zip.file('ppt/slides/slide19.xml').async('string');
-    const paras=L.map(t=>`<a:p><a:pPr marL="285750" indent="-285750"><a:spcAft><a:spcPts val="1200"/></a:spcAft><a:buFont typeface="Arial"/><a:buChar char="&#8226;"/></a:pPr><a:r><a:rPr lang="es-ES" sz="2000" dirty="0"/><a:t>${esc(t)}</a:t></a:r></a:p>`).join('');
+    const paras=L.map(t=>`<a:p><a:pPr marL="285750" indent="-285750"><a:spcAft><a:spcPts val="800"/></a:spcAft><a:buFont typeface="Arial"/><a:buChar char="&#8226;"/></a:pPr><a:r><a:rPr lang="es-ES" sz="${fz}" dirty="0"/><a:t>${esc(t)}</a:t></a:r></a:p>`).join('');
     x=x.replace(/<a:p><a:r><a:rPr[^>]*\/><a:t>\{\{OBS\}\}<\/a:t><\/a:r><\/a:p>/,paras);zip.file('ppt/slides/slide19.xml',x)}
   return await zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.presentationml.presentation',compression:'DEFLATE',compressionOptions:{level:3}});
 };
