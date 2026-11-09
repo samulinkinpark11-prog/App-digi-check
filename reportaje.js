@@ -39,6 +39,7 @@ function layout(items,X,Y,W,H,g){
     out.push({x:Math.round(ox+(cw-w)/2),y:Math.round(oy+(ch-h)/2),w:Math.round(w),h:Math.round(h)})}
   return out
 }
+window._rh={prep,layout,esc,titulo,MESES};
 window.generarReportaje=async function(o){
   // o: {site,dcim,se,photos:[[Blob]],na:[bool],date:Date}
   const d=o.date||new Date(),name=titulo(o.site);
