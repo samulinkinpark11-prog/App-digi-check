@@ -48,7 +48,7 @@ window.generarReportaje=async function(o){
   const rep=s=>s.split('{{SIDE}}').join(esc(side)).split('{{DCIM}}').join(esc(o.dcim)).split('{{NAME}}').join(esc(name)).split('{{MES}}').join(MESES[d.getMonth()]).split('{{ANIO}}').join(String(d.getFullYear()));
   for(const p of Object.keys(zip.files)){if(/^(ppt\/slideLayouts\/slideLayout\d+\.xml|ppt\/slides\/slide1\.xml|docProps\/app\.xml)$/.test(p)){zip.file(p,rep(await zip.file(p).async('string')))}}
   // cover photo
-  const first=(o.photos[0]||[])[0];
+  const first=o.cover||(o.photos[0]||[])[0];
   if(first){const c=await prep(first.blob||first,1500,.85,5143500/6858000);zip.file('ppt/media/image5.jpg',c.data,{createFolders:false})}
   // group by slide
   const bySlide={},pb={};
