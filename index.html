@@ -199,7 +199,7 @@ cv.onpointerup=()=>drag=null;
 function cropCancel(){$('modal').style.display='none';if(ED){const e=ED;ED=null;V={i:e.i,j:e.j,z:0};showV()}}
 function cropOk(){if(sel.w<10||sel.h<10)return alert('Selecciona una zona mayor');const sx=img.width/cv.width,sy=img.height/cv.height,o=document.createElement('canvas');o.width=sel.w*sx;o.height=sel.h*sy;o.getContext('2d').drawImage(img,sel.x*sx,sel.y*sy,o.width,o.height,0,0,o.width,o.height);
 const q=quality(o).issues;o.toBlob(b=>{const E=ED;ED=null;cropCancel();if(E){const p=P[E.i][E.j];p.blob=b;p.url=URL.createObjectURL(b);p.q=q;p.th=null;p.ann=null;analyze(p,true);V={i:E.i,j:E.j,z:0};showV();persist();return}list()},'image/jpeg',.92)}
-async function validate(){if(S.job.type==='Ampliación'&&!S.job.amp)return alert('Elige el tipo de ampliación (Nuevo rack, Nuevo equipo, Nueva tarjeta o Nuevo puerto) al principio del checklist');const miss=ITEMS.map((_,i)=>i).filter(i=>!done(i));
+async function validate(){if(BUSY)return;if(S.job.type==='Ampliación'&&!S.job.amp)return alert('Elige el tipo de ampliación (Nuevo rack, Nuevo equipo, Nueva tarjeta o Nuevo puerto) al principio del checklist');const miss=ITEMS.map((_,i)=>i).filter(i=>!done(i));
 if(miss.length)return alert('Faltan por completar los puntos: '+miss.map(i=>(i+1)+(i>=NB&&ANS[i]=='si'?' (falta foto)':i>=NB?' (responde Sí o No)':'')).join(', '));
 if(!P.some(a=>a.length))return alert('Debes subir al menos una foto.');
 let mx='';if(isRp()){const r=S.job.rp||{};if(!String(r.num||'').trim()||!String(r.miga||'').trim())return alert('Rellena en «Datos del replanteo» el nº de cabecera y el código MIGA');const mm=rpMissing();if(mm.length)mx='\n\nFaltan datos del replanteo: '+mm.join(', ')+'.'}
@@ -212,7 +212,11 @@ const h=new DataView(new ArrayBuffer(30));h.setUint32(0,0x04034b50,true);h.setUi
 const d=new DataView(new ArrayBuffer(46));d.setUint32(0,0x02014b50,true);d.setUint16(4,20,true);d.setUint16(6,20,true);d.setUint16(8,0x800,true);d.setUint32(16,c,true);d.setUint32(20,s,true);d.setUint32(24,s,true);d.setUint16(28,n.length,true);d.setUint32(42,off,true);cen.push(new Uint8Array(d.buffer),n);off+=30+n.length+s}
 const cs=cen.reduce((a,b)=>a+b.length,0),e=new DataView(new ArrayBuffer(22));e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cs,true);e.setUint32(16,off,true);return new Blob([...loc,...cen,new Uint8Array(e.buffer)],{type:'application/zip'})}
 async function b64(u){let t='';for(let i=0;i<u.length;i+=8192)t+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(t)}
-async function final(){const now=new Date(),p2=n=>String(n).padStart(2,'0'),ymd=''+now.getFullYear()+p2(now.getMonth()+1)+p2(now.getDate());
+let BUSY=false;
+function busyShow(){let b=$('busy');if(!b){b=document.createElement('div');b.id='busy';b.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(5,12,24,.96);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;padding:30px;color:#fff';b.innerHTML='<style>@keyframes bsp{to{transform:rotate(360deg)}}@keyframes bpl{50%{opacity:.35}}</style><div style="width:72px;height:72px;border:7px solid rgba(255,255,255,.18);border-top-color:#18b8ff;border-radius:50%;animation:bsp 1s linear infinite"></div><h2 style="margin:0;animation:bpl 1.6s ease-in-out infinite">Validado</h2><p style="margin:0;font-size:16px;opacity:.85">Espera unos segundos, por favor…<br>No cierres ni pulses nada mientras se guarda todo.</p>';document.body.appendChild(b)}b.style.display='flex'}
+function busyHide(){const b=$('busy');if(b)b.style.display='none'}
+async function final(){if(BUSY)return;BUSY=true;busyShow();await new Promise(r=>setTimeout(r,60));try{await finalRun()}finally{BUSY=false;busyHide()}}
+async function finalRun(){const now=new Date(),p2=n=>String(n).padStart(2,'0'),ymd=''+now.getFullYear()+p2(now.getMonth()+1)+p2(now.getDate());
 const folder=`${ymd}_${S.job.site} ${S.job.type==='Ampliación'?'Ampliacion de '+AMPF[S.job.amp]:S.job.type}`,base=(S.path?S.path+'/':'')+'Almacenamiento Fotos/'+folder+'/',en=new TextEncoder(),files=[],log=[];
 await stampAll();
 for(let i=0;i<NT;i++){for(let j=0;j<P[i].length;j++){const nm=`${i+1}${String.fromCharCode(97+j)}.jpg`;files.push({name:base+nm,data:new Uint8Array(await P[i][j].blob.arrayBuffer())})}}
@@ -397,7 +401,7 @@ async function genRp(){const L=LAST,b=$('rb'),m=$('rm');b.disabled=true;m.textCo
  const idx={4:[0],5:[1],6:[2],7:[4],8:[6],9:[3,5],10:[7],11:[8]},na={};for(const s in idx)na[s]=idx[s].every(k=>!!L.na[k]);
  const[y,mo,d]=(rp.fecha||'').split('-').map(Number),mm=s=>String(s||'').trim(),u=v=>mm(v);
  const notes={4:mm(rp.dir),5:mm(rp.acceso),6:mm(rp.dific),7:mm(rp.suelo),8:mm(rp.cuadro),9:rp.ru?'Huella en RU. '+mm(rp.ru):'',10:[rp.dTotal&&`Distancia total: ${u(rp.dTotal)}m`,rp.azul&&`Cable Azul ${u(rp.secc)}mm: ${u(rp.azul)}m`,rp.negro&&`Cable Negro ${u(rp.secc)}mm: ${u(rp.negro)}m`,rp.tubo&&`Tubo TFA36: ${u(rp.tubo)}m`].filter(Boolean).join('\n'),11:[rp.tDist&&`Distancia total ${u(rp.tDist)} mts.`,rp.tSecc&&`Cable amarillo-verde ${u(rp.tSecc)}mm`].filter(Boolean).join('\n')};
- const o={name:L.site,num:mm(rp.num),miga:mm(rp.miga),fecha:y?new Date(y,mo-1,d):new Date(),real:mm(rp.real),cover:(L.photos[1][0]||L.photos[0][0]||null),slides:sl,na,notes};
+ const o={name:L.site,num:mm(rp.num),miga:mm(rp.miga),fecha:y?new Date(y,mo-1,d):new Date(),real:mm(rp.real),cover:(L.photos[1][0]||L.photos[0][0]||null),slides:sl,na,notes,titles:L.titles};
  const blob=await generarReplanteo(o),nm=replanteoNombre(o);await saveOut(L,blob,nm,m);b.textContent='Generar de nuevo'}catch(e){m.textContent='Error al generar: '+(e.message||e)}b.disabled=false}
 
 anInit();

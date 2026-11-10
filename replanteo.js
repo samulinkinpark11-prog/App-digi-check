@@ -9,7 +9,10 @@ window.generarReplanteo=async function(o){
   JSZip.defaults.createFolders=false;
   const zip=await JSZip.loadAsync(window.REPLANTEO_TPL,{base64:true});
   const rep=s=>s.split('{{SIDE}}').join(H.esc(side)).split('{{NAMEU}}').join(H.esc(nameU)).split('{{NAMET}}').join(H.esc(nameT)).split('{{NUM}}').join(H.esc(o.num)).split('{{MIGA}}').join(H.esc(o.miga)).split('{{FECHA}}').join(`${p2(d.getDate())}/${p2(d.getMonth()+1)}/${d.getFullYear()}`).split('{{MESANIO}}').join(H.MESES[d.getMonth()].toUpperCase()+' '+d.getFullYear()).split('{{REAL}}').join(H.esc(o.real||''));
-  for(const p of Object.keys(zip.files)){if(/^(ppt\/slideLayouts\/slideLayout\d+\.xml|ppt\/slideMasters\/slideMaster\d+\.xml|ppt\/slides\/slide[12]\.xml|docProps\/app\.xml)$/.test(p))zip.file(p,rep(await zip.file(p).async('string')))}
+  for(const p of Object.keys(zip.files)){if(/^(ppt\/slideLayouts\/slideLayout\d+\.xml|ppt\/slideMasters\/slideMaster\d+\.xml|ppt\/slides\/slide[123]\.xml|docProps\/app\.xml)$/.test(p)){let x=rep(await zip.file(p).async('string'));
+    if(/slide2\.xml$/.test(p))x=x.replace(/<a:br>[\s\S]*?<\/a:br>/g,'</a:p><a:p>');
+    if(/slide3\.xml$/.test(p)&&o.titles&&o.titles.length){const ps=o.titles.map(t=>'<a:p><a:r><a:rPr lang="es-ES" sz="2000" dirty="0"/><a:t>'+H.esc(String(t).replace(/[.\s]+$/,'')+'.')+'</a:t></a:r></a:p>').join('');x=x.replace(/(<a:lvl1pPr marL="342900" indent="-342900"><a:lnSpc><a:spcPts val=")3500/,'$13000').replace(/(<\/a:lvl1pPr><\/a:lstStyle>)(?:<a:p>[\s\S]*?<\/a:p>)+(<\/p:txBody><\/p:sp><\/p:spTree>)/,'$1'+ps+'$2')}
+    zip.file(p,x)}}
   if(o.cover){const c=await H.prep(o.cover,1500,.85,6102181/6858000);zip.file('ppt/media/image8.jpeg',c.data,{createFolders:false})}
   const X=950000,Y=700000,W=10900000,Hh=4600000;
   for(let s=4;s<=11;s++){
@@ -19,8 +22,8 @@ window.generarReplanteo=async function(o){
     if(blobs.length){
       const items=[];for(const b of blobs)items.push(await H.prep(b,1600,.85));
       const pos=H.layout(items,X,Y,W,Hh,110000);
-      items.forEach((it,k)=>{const nm=`ppt/media/rp_${s}_${k+1}.jpg`;zip.file(nm,it.data,{createFolders:false});const id='rIdF'+(k+1);
-        rels+=`<Relationship Id="${id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/rp_${s}_${k+1}.jpg"/>`;
+      items.forEach((it,k)=>{const nm=`ppt/media/rp_${s}_${k+1}.jpeg`;zip.file(nm,it.data,{createFolders:false});const id='rIdF'+(k+1);
+        rels+=`<Relationship Id="${id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/rp_${s}_${k+1}.jpeg"/>`;
         const p=pos[k];add+=`<p:pic><p:nvPicPr><p:cNvPr id="${200+k}" name="Foto ${k+1}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="${id}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm><a:off x="${p.x}" y="${p.y}"/><a:ext cx="${p.w}" cy="${p.h}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`})
     }else if(o.na&&o.na[s]){
       const m=x.match(/<p:sp>(?:(?!<\/p:sp>).)*?Subt[^>]*>(?:(?!<\/p:sp>).)*<\/p:sp>/s);
