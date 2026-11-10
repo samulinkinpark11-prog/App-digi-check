@@ -1,1 +1,1 @@
-{"appId":"com.digi.dcdigicheck","appName":"DCDIGICheck","webDir":"www","plugins":{"CapacitorHttp":{"enabled":true}}}
+{"appId":"com.digi.dcdigicheck","appName":"DigiCheckDC","webDir":"www","plugins":{"CapacitorHttp":{"enabled":true}}}
