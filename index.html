@@ -217,7 +217,7 @@ $('f').onchange=async e=>{for(const fl of e.target.files){const p=addBlob(cur,fl
 function success(nf,nn,folder,where,base){$('bar').hidden=true;$('fb').style.display='none';$('cnt').style.display='none';app.innerHTML=`<div class="okscreen"><div class="big">${ic('check',48)}</div><h2>Checklist validado</h2><p class="hint">${esc(folder)}</p><div class="stats"><div><b>${nf}</b><span>fotos</span></div><div><b>${nn}</b><span>no aplica</span></div><div><b>${NT}/${NT}</b><span>puntos</span></div></div><p class="hint">Guardado en ${esc(where)}<br>${esc(base)}</p>${LAST&&LAST.type==='Replanteo'?`<button class="w" id="rb" onclick="genRp()">Generar PowerPoint de replanteo</button><button class="w s" id="ro" style="display:none" onclick="openRep()">Abrir PowerPoint…</button><p class="hint" id="rm">Rellena la plantilla de replanteo con tus datos, plano marcado y fotos</p>`:''}${LAST&&LAST.dcim&&LAST.type!=='Replanteo'?`<button class="w" id="rb" onclick="genRep()">Generar reportaje fotográfico</button><button class="w s" id="ro" style="display:none" onclick="openRep()">Abrir PowerPoint…</button><p class="hint" id="rm">PowerPoint de la empresa con las fotos colocadas en cada diapositiva</p>`:''}<button class="w s" onclick="home()">Volver al inicio</button></div>`}
 function cam(i){cur=i;openCam(i)}
 function toggleNA(i){NA[i]=!NA[i];list()}
-function del(i,j){P[i].splice(j,1);list()}
+function del(i,j){if(i==='cover'){S.cover=null;P.cover=[];persist();list();return}P[i].splice(j,1);list()}
 let img,sel,drag;const cv=$('cv'),cx=cv.getContext('2d');
 function openCrop(f){img=new Image();img.onload=()=>{const k=Math.min(1,1200/Math.max(img.width,img.height));cv.width=img.width*k;cv.height=img.height*k;sel={x:cv.width*.05,y:cv.height*.05,w:cv.width*.9,h:cv.height*.9};draw();$('modal').style.display='flex'};img.src=URL.createObjectURL(f)}
 function draw(){cx.clearRect(0,0,cv.width,cv.height);cx.drawImage(img,0,0,cv.width,cv.height);cx.fillStyle='#0008';cx.fillRect(0,0,cv.width,cv.height);cx.drawImage(img,sel.x*img.width/cv.width,sel.y*img.height/cv.height,sel.w*img.width/cv.width,sel.h*img.height/cv.height,sel.x,sel.y,sel.w,sel.h);cx.strokeStyle='#0f0';cx.lineWidth=3;cx.strokeRect(sel.x,sel.y,sel.w,sel.h)}
@@ -241,7 +241,8 @@ const h=new DataView(new ArrayBuffer(30));h.setUint32(0,0x04034b50,true);h.setUi
 const d=new DataView(new ArrayBuffer(46));d.setUint32(0,0x02014b50,true);d.setUint16(4,20,true);d.setUint16(6,20,true);d.setUint16(8,0x800,true);d.setUint32(16,c,true);d.setUint32(20,s,true);d.setUint32(24,s,true);d.setUint16(28,n.length,true);d.setUint32(42,off,true);cen.push(new Uint8Array(d.buffer),n);off+=30+n.length+s}
 const cs=cen.reduce((a,b)=>a+b.length,0),e=new DataView(new ArrayBuffer(22));e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cs,true);e.setUint32(16,off,true);return new Blob([...loc,...cen,new Uint8Array(e.buffer)],{type:'application/zip'})}
 async function b64(u){let t='';for(let i=0;i<u.length;i+=8192)t+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(t)}
-function coverCard(){const c=S.cover;return `<div class="card ${c?'ok':''}"><b>Foto de portada</b><p class="hint">Obligatoria. Es la foto que sale en la primera diapositiva del PowerPoint.</p>${c?`<div class="row"><div class="th" style="margin:8px 0"><img src="${c.url}"><b>Portada</b><i onclick="coverDel()">${ic('close',13)}</i></div></div>`:''}<div class="row act a1"><button class="pc" onclick="coverCam()">${ic('camera')} Cámara</button><button class="s" onclick="$('fcg').click()">Galería</button></div></div>`}
+function coverCard(){const c=S.cover;return `<div class="card ${c?'ok':''}"><b>Foto de portada</b><p class="hint">Obligatoria. Es la foto que sale en la primera diapositiva del PowerPoint.</p>${c?`<div class="row"><div class="th" style="margin:8px 0"><img src="${c.url}" onclick="coverView()"><b>Portada</b><i onclick="coverDel()">${ic('close',13)}</i></div></div>`:''}<div class="row act a1"><button class="pc" onclick="coverCam()">${ic('camera')} Cámara</button><button class="s" onclick="$('fcg').click()">Galería</button></div></div>`}
+function coverView(){P.cover=[S.cover];view('cover',0)}
 async function coverDel(){if(!await C('¿Borrar la foto de portada?','Borrar','Cancelar'))return;S.cover=null;persist();list()}
 function coverCam(){P.cover=[];cur='cover';openCam('cover')}
 function coverSet(f){if(!f)return;S.cover={blob:f,url:URL.createObjectURL(f)};persist();list()}
@@ -273,11 +274,11 @@ function exs(i){if(S.job.type==='Replanteo')return null;const o=S.job.type==='In
 function viewEx(i){V={i,j:0,z:0,ex:true};showV()}
 function showV(){const ex=V.ex,a=ex?exs(V.i)||[]:P[V.i];if(!a.length)return closeV();V.j=(V.j+a.length)%a.length;document.querySelectorAll('#vw .vf .own').forEach(b=>b.style.display=ex?'none':'');
 if(ex){const e=a[V.j];$('vi').src=EXIMG[e[0]];resetZ();$('vt').innerHTML=`<span style="display:block;opacity:.7;font-size:12px">Ejemplo ${V.j+1}/${a.length} · ${esc(ITEMS[V.i].split(' (')[0])}</span>${esc(e[1])}${e[2]==1?' <span style="color:#22c55e">✓ Bien</span>':e[2]==2?' <span style="color:#ef4444">✗ Mal</span>':''}`;$('vw').style.display='flex';return}
-$('vi').src=a[V.j].url;resetZ();$('vt').textContent=(V.i+1)+String.fromCharCode(97+V.j)+' · '+ITEMS[V.i].split(' (')[0]+(a[V.j].q&&a[V.j].q.length?' ⚠ '+a[V.j].q.join(', '):'')+' · pellizca para ampliar';$('vw').style.display='flex'}
+$('vi').src=a[V.j].url;resetZ();$('vt').textContent=(V.i==='cover'?'Foto de portada':(V.i+1)+String.fromCharCode(97+V.j)+' · '+ITEMS[V.i].split(' (')[0])+(a[V.j].q&&a[V.j].q.length?' ⚠ '+a[V.j].q.join(', '):'')+' · pellizca para ampliar';$('vw').style.display='flex'}
 function closeV(){const ex=V&&V.ex;$('vw').style.display='none';document.querySelectorAll('#vw .vf .own').forEach(b=>b.style.display='');if(!ex||$('cm').style.display!=='block')list()}
 function stepV(d){V.j+=d;V.z=0;showV()}
 function zoomV(){V.z=!V.z;showV()}
-async function delV(){if(await C('¿Borrar esta foto?','Borrar','Cancelar')){P[V.i].splice(V.j,1);V.z=0;showV()}}
+async function delV(){if(await C('¿Borrar esta foto?','Borrar','Cancelar')){P[V.i].splice(V.j,1);if(V.i==='cover'){S.cover=null;persist()}V.z=0;showV()}}
 let sy=0,pinch=null,pan=null,mv=false,lastTap=0,Z={s:1,x:0,y:0};
 function applyZ(){$('vi').style.transform=`translate(${Z.x}px,${Z.y}px) scale(${Z.s})`}
 function resetZ(){Z={s:1,x:0,y:0};applyZ()}
