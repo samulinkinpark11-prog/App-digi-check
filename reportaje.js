@@ -18,9 +18,9 @@ const SLIDE_OF=[3,4,5,6,7,8,9,10,11,12,13,14,20,15,16,17,16];
 const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 function titulo(s){const small=['de','del','la','las','los','el','y','en'];return String(s).toLowerCase().split(/\s+/).filter(Boolean).map((w,i)=>(i>0&&small.includes(w))?w:w.charAt(0).toUpperCase()+w.slice(1)).join(' ')}
-async function prep(blob,maxSide,q,crop){
+async function prep(blob,maxSide,q,crop,shift){
   const bm=await createImageBitmap(blob);let sw=bm.width,sh=bm.height,sx=0,sy=0;
-  if(crop){const r=crop;if(sw/sh>r){const nw=sh*r;sx=(sw-nw)/2;sw=nw}else{const nh=sw/r;sy=(sh-nh)/2;sh=nh}}
+  if(crop){const r=crop;if(sw/sh>r){const nw=sh*r;sx=Math.max(0,(sw-nw)/2-(shift||0)*nw);sw=nw}else{const nh=sw/r;sy=(sh-nh)/2;sh=nh}}
   const k=Math.min(1,maxSide/Math.max(sw,sh)),w=Math.round(sw*k),h=Math.round(sh*k);
   const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(bm,sx,sy,sw,sh,0,0,w,h);
   if(bm.close)bm.close();
@@ -64,9 +64,11 @@ window.generarReportaje=async function(o){
     const pT=find('PTRO'),pR=find('16. Regleta'),pL=ps.find(p=>/<a:t>17\. <\/a:t>/.test(p));
     if(pT&&pR&&pL){const nP=pT.replace('PTRO','Servidores PPPoE I y II'),aT=pT.replace('<a:t>15. </a:t>','<a:t>16. </a:t>'),aR=pR.replace('16. Regleta','17. Regleta'),aL=pL.replace('<a:t>17. </a:t>','<a:t>18. </a:t>');
       ix=ix.replace(pL,aL).replace(pR,aR).replace(pT,nP+aT);zip.file('ppt/slides/slide2.xml',ix)}}
+  { const D=1200000; let c1=await zip.file('ppt/slides/slide1.xml').async('string');
+    c1=c1.replace('<a:off x="7048500" y="21262"/><a:ext cx="5143500" cy="6858000"/>',`<a:off x="${7048500-D}" y="21262"/><a:ext cx="${5143500+D}" cy="6858000"/>`).replace('<a:off x="4606231" y="983103"/>',`<a:off x="${4606231-D}" y="983103"/>`);zip.file('ppt/slides/slide1.xml',c1)}
   // cover photo
   const first=o.cover||(o.photos[0]||[])[0];
-  if(first){const c=await prep(first.blob||first,1500,.85,5143500/6858000);zip.file('ppt/media/image5.jpg',c.data,{createFolders:false})}
+  if(first){const c=await prep(first.blob||first,1500,.85,6343500/6858000);zip.file('ppt/media/image5.jpg',c.data,{createFolders:false})}
   // group by slide
   const bySlide={},pb={};
   for(let i=0;i<SLIDE_OF.length;i++){const s=SLIDE_OF[i];(bySlide[s]=bySlide[s]||[]).push(i);for(const ph of (o.photos[i]||[])){(pb[s]=pb[s]||[]).push(ph.blob||ph)}}
