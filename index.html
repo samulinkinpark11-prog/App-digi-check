@@ -416,7 +416,8 @@ dbGet().then(d=>{DR=d;home()});
 const RPF=['num','miga','real','fecha','dir','acceso','dific','suelo','cuadro','ru','dTotal','azul','negro','secc','tubo','tDist','tSecc'];
 const RPL={num:'Nº de cabecera',miga:'Código MIGA',real:'Realizado por',fecha:'Fecha',dir:'Dirección',acceso:'Acceso',dific:'Dificultades de entrada',suelo:'Suelo e infraestructuras',cuadro:'Datos del cuadro de fuerza',ru:'RU de la huella',dTotal:'Distancia total (cableado)',azul:'Cable azul',negro:'Cable negro',secc:'Sección del cable',tubo:'Tubo TFA36',tDist:'Distancia de tierra',tSecc:'Sección de tierra'};
 const isRp=()=>S.job&&S.job.type==='Replanteo';
-function rpInit(){const d=new Date(),p=n=>String(n).padStart(2,'0');return{fecha:`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`,real:S.user?S.user.name:'',a6:[],a9:[],a10:[]}}
+function userFull(){const u=String((S.user&&S.user.name)||'').trim();if(!u)return'';return u.split(/[.\-_\s]+/).filter(Boolean).map(w=>w.charAt(0).toUpperCase()+w.slice(1).toLowerCase()).join(' ')}
+function rpInit(){const d=new Date(),p=n=>String(n).padStart(2,'0');return{fecha:`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`,real:userFull(),a6:[],a9:[],a10:[]}}
 function rpMissing(){const r=S.job.rp||{};const m=RPF.filter(k=>!String(r[k]||'').trim()).map(k=>RPL[k]);if(!S.plan)m.push('Plano de sala');return m}
 function rpSet(k,v){S.job.rp[k]=v;persist()}
 /* --- dibujo --- */

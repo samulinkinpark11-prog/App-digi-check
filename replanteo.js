@@ -13,7 +13,18 @@ window.generarReplanteo=async function(o){
     if(/slide2\.xml$/.test(p))x=x.replace(/<a:br>[\s\S]*?<\/a:br>/g,'</a:p><a:p>');
     if(/slide3\.xml$/.test(p)&&o.titles&&o.titles.length){const ps=o.titles.map(t=>'<a:p><a:r><a:rPr lang="es-ES" sz="2000" dirty="0"/><a:t>'+H.esc(String(t).replace(/[.\s]+$/,'')+'.')+'</a:t></a:r></a:p>').join('');x=x.replace(/(<a:lvl1pPr marL="342900" indent="-342900"><a:lnSpc><a:spcPts val=")3500/,'$13000').replace(/(<\/a:lvl1pPr><\/a:lstStyle>)(?:<a:p>[\s\S]*?<\/a:p>)+(<\/p:txBody><\/p:sp><\/p:spTree>)/,'$1'+ps+'$2')}
     zip.file(p,x)}}
-  if(o.cover){const c=await H.prep(o.cover,1500,.85,6102181/6858000);zip.file('ppt/media/image8.jpeg',c.data,{createFolders:false})}
+  if(o.cover){const D=2400000,PX=3800000;let c1=await zip.file('ppt/slides/slide1.xml').async('string');
+    c1=c1.replace('<a:srcRect l="10427" r="48585"/><a:stretch/></p:blipFill><p:spPr/>',`<a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm><a:off x="${PX}" y="0"/><a:ext cx="${12192000-PX}" cy="6858000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr>`).replace('<a:off x="3574428" y="934716"/>',`<a:off x="${3574428-D}" y="934716"/>`);
+    const longest=Math.max(...String(nameU).split(/\s+/).map(w=>w.length),1),sz=Math.max(18,Math.min(54,Math.floor(330/(0.68*longest))))*100;
+    c1=c1.replace(/(name="Title 2">[\s\S]*?<p:spPr>)<a:xfrm>[\s\S]*?<\/a:xfrm>(<\/p:spPr><p:txBody>)<a:bodyPr\/>(<a:lstStyle\/>)<a:p>[\s\S]*?<\/a:p>(<\/p:txBody>)/,`$1<a:xfrm><a:off x="300000" y="2200000"/><a:ext cx="4600000" cy="2458000"/></a:xfrm>$2<a:bodyPr lIns="0" rIns="0" anchor="ctr"/>$3<a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="es-ES" sz="${sz}" dirty="0"/><a:t>${H.esc(nameU)}</a:t></a:r></a:p>$4`);
+    c1=c1.replace('<a:off x="382374" y="5742667"/><a:ext cx="5517065" cy="1032904"/>','<a:off x="300000" y="5693334"/><a:ext cx="3200000" cy="1032904"/>').replace(/(name="Text Placeholder 1">[\s\S]*?<\/p:sp>)/,m=>m.replace(/sz="1800"/g,'sz="1400"').replace(/<a:p>/g,'<a:p><a:pPr algn="ctr"/>'));
+    const grab=n=>{const m=c1.match(new RegExp('<p:sp><p:nvSpPr><p:cNvPr id="\\d+" name="'+n+'">[\\s\\S]*?</p:sp>'));return m?m[0]:''},t1=grab('Title 2'),t2=grab('Text Placeholder 1');
+    if(t1&&t2){c1=c1.replace(t1,'').replace(t2,'');
+      const logo='<p:pic><p:nvPicPr><p:cNvPr id="90" name="Logo"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="rId901"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm><a:off x="338084" y="380715"/><a:ext cx="1151860" cy="406351"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>';
+      c1=c1.replace('</p:spTree>',logo+t1+t2+'</p:spTree>');
+      const r1=await zip.file('ppt/slides/_rels/slide1.xml.rels').async('string');zip.file('ppt/slides/_rels/slide1.xml.rels',r1.replace('</Relationships>','<Relationship Id="rId901" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image2.emf"/></Relationships>'))}
+    zip.file('ppt/slides/slide1.xml',c1);
+    const c=await H.prep(o.cover,1800,.85,(12192000-PX)/6858000);zip.file('ppt/media/image8.jpeg',c.data,{createFolders:false})}
   const X=950000,Y=700000,W=10900000,Hh=4600000;
   for(let s=4;s<=11;s++){
     const sp=`ppt/slides/slide${s}.xml`,rp=`ppt/slides/_rels/slide${s}.xml.rels`;
