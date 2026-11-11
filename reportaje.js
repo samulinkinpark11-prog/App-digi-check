@@ -63,7 +63,7 @@ window.generarReportaje=async function(o){
     const ps=ix.match(/<a:p>(?:(?!<\/a:p>).)*<\/a:p>/gs),find=t=>ps.find(p=>p.includes('<a:t>'+t));
     const pT=find('PTRO'),pR=find('16. Regleta'),pL=ps.find(p=>/<a:t>17\. <\/a:t>/.test(p));
     if(pT&&pR&&pL){const nP=pT.replace('PTRO','Servidores PPPoE I y II'),aT=pT.replace('<a:t>15. </a:t>','<a:t>16. </a:t>'),aR=pR.replace('16. Regleta','17. Regleta'),aL=pL.replace('<a:t>17. </a:t>','<a:t>18. </a:t>');
-      ix=ix.replace(pL,aL).replace(pR,aR).replace(pT,nP+aT);ix=ix.replace(/sz="2400"/g,'sz="1800"').replace(/<a:spcPts val="1920"\/>/g,'<a:spcPts val="2200"/>');zip.file('ppt/slides/slide2.xml',ix)}}
+      ix=ix.replace(pL,aL).replace(pR,aR).replace(pT,nP+aT);ix=ix.replace(/sz="2400"/g,'sz="1800"').replace(/<a:lnSpc><a:spcPts val="1920"\/><\/a:lnSpc>/g,'<a:lnSpc><a:spcPts val="2100"/></a:lnSpc><a:spcBef><a:spcPts val="0"/></a:spcBef><a:spcAft><a:spcPts val="0"/></a:spcAft>');zip.file('ppt/slides/slide2.xml',ix)}}
   { const D=5410000,PX=1700000; let c1=await zip.file('ppt/slides/slide1.xml').async('string');
     c1=c1.replace('<a:off x="7048500" y="21262"/><a:ext cx="5143500" cy="6858000"/>',`<a:off x="${PX}" y="21262"/><a:ext cx="${12192000-PX}" cy="6858000"/>`).replace('<a:off x="4606231" y="983103"/>',`<a:off x="${4606231-D}" y="983103"/>`);
     const longest=Math.max(String(o.dcim).length,...String(name).split(/\s+/).map(w=>w.length)),sz=Math.max(18,Math.min(40,Math.floor(200/(0.6*longest))))*100;
