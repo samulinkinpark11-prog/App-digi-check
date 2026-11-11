@@ -297,20 +297,24 @@ async function fvAdd(g,it,all){let src;try{const bm=await createImageBitmap(it.b
 function fvBig(it){const v=document.createElement('div');v.style.cssText='position:fixed;inset:0;z-index:10000;background:#000;display:flex;align-items:center;justify-content:center';const u=URL.createObjectURL(it.b);v.innerHTML='<img src="'+u+'" style="max-width:100%;max-height:100%">';v.onclick=()=>{v.remove();URL.revokeObjectURL(u)};document.body.appendChild(v)}
 
 /* ===== Dictado por voz ===== */
-let MIC=null,MICB=false,MICP=false;
+let MIC=null,MICP=false,MICG=0;
+const micT=(p,ms)=>Promise.race([Promise.resolve(p),new Promise((_,r)=>setTimeout(()=>r(new Error('tiempo agotado')),ms||2500))]);
 function micUI(b,on){if(!b)return;b.classList.toggle('on',on);if(b.lastChild)b.lastChild.textContent=on?' Escuchando… pulsa para parar':' Dictar'}
-async function micStop(){const m=MIC;MIC=null;if(m&&m.poll)clearInterval(m.poll);document.querySelectorAll('.mic.on').forEach(b=>micUI(b,false));if(!m)return;try{if(m.SR)await m.SR.stop();else if(m.r){m.r.onend=null;m.r.stop()}}catch(e){}try{if(m.SR)await m.SR.removeAllListeners()}catch(e){}}
-async function micToggle(btn){if(MICB)return;MICB=true;try{const same=MIC&&MIC.btn===btn;if(MIC)await micStop();if(same)return;await micStart(btn)}finally{MICB=false}}
-async function micStart(btn){const ta=btn.previousElementSibling;if(!ta)return;const PL=window.Capacitor&&Capacitor.Plugins,SR=PL&&PL.SpeechRecognition;let base=ta.value;
+function micStop(){const m=MIC;MIC=null;MICG++;if(m&&m.poll)clearInterval(m.poll);document.querySelectorAll('.mic.on').forEach(b=>micUI(b,false));if(!m)return;try{if(m.SR){micT(m.SR.stop()).catch(()=>{}).then(()=>micT(m.SR.removeAllListeners()).catch(()=>{}))}else if(m.r){m.r.onend=null;m.r.stop()}}catch(e){}}
+function micToggle(btn){const same=MIC&&MIC.btn===btn;if(MIC)micStop();if(same)return;micStart(btn).catch(e=>{micStop();alert('Dictado por voz: '+((e&&e.message)||e))})}
+async function micStart(btn){const ta=btn.previousElementSibling;if(!ta)return;const PL=window.Capacitor&&Capacitor.Plugins,SR=PL&&PL.SpeechRecognition,my=++MICG;let base=ta.value;
  const put=t=>{if(!t)return;ta.value=base+(base&&!/\s$/.test(base)?' ':'')+t;ta.dispatchEvent(new Event('input',{bubbles:true}))};
- const m={btn,ta,SR,t:Date.now(),got:false,fails:0,ending:false};
- const onEnd=()=>{if(MIC!==m||m.ending)return;m.ending=true;base=ta.value;const quick=Date.now()-m.t<1200&&!m.got;m.fails=quick?m.fails+1:0;if(m.fails>=3||!document.body.contains(ta)){micStop();return}setTimeout(()=>{if(MIC!==m)return;m.ending=false;go()},300)};
- const go=()=>{m.t=Date.now();m.got=false;if(SR){SR.start({language:'es-ES',maxResults:1,partialResults:true,popup:false}).then(r=>{if(r&&r.matches&&r.matches[0]){m.got=true;put(r.matches[0])}}).catch(()=>{if(MIC===m)onEnd()})}else{try{m.r.start()}catch(e){onEnd()}}};
- if(SR){try{try{await SR.stop()}catch(e){}const a=await SR.available();if(!a||!a.available)throw new Error('na');if(!MICP){const p=await SR.requestPermissions();if(p&&p.speechRecognition&&p.speechRecognition!=='granted')return alert('Permite el micrófono para poder dictar.');MICP=true}
-  await SR.removeAllListeners();await SR.addListener('partialResults',d=>{if(MIC===m&&d&&d.matches&&d.matches[0]){m.got=true;put(d.matches[0])}});await SR.addListener('listeningState',d=>{if(d&&d.status==='stopped')onEnd()});
-  MIC=m;micUI(btn,true);m.poll=setInterval(async()=>{if(MIC!==m)return;if(!document.body.contains(btn)||!document.body.contains(ta))return micStop();try{const l=await SR.isListening();if(l&&l.listening===false&&Date.now()-m.t>1500)onEnd()}catch(e){}},700);go();return}catch(e){if(MIC===m)await micStop()}}
- const W=window.SpeechRecognition||window.webkitSpeechRecognition;if(!W)return alert('El dictado por voz no está disponible en este dispositivo.');
- const r=new W();r.lang='es-ES';r.interimResults=true;r.continuous=true;r.onresult=e=>{let t='';for(const x of e.results)t+=x[0].transcript;m.got=true;put(t)};r.onend=onEnd;r.onerror=()=>{};m.r=r;MIC=m;micUI(btn,true);go()}
+ const m={btn,ta,SR,t:Date.now(),got:false,fails:0,ending:false};MIC=m;micUI(btn,true);
+ const ok=()=>MIC===m&&MICG===my;
+ const onEnd=()=>{if(!ok()||m.ending)return;m.ending=true;base=ta.value;const quick=Date.now()-m.t<1200&&!m.got;m.fails=quick?m.fails+1:0;if(m.fails>=3||!document.body.contains(ta)){micStop();return}setTimeout(()=>{if(!ok())return;m.ending=false;go()},300)};
+ const go=()=>{m.t=Date.now();m.got=false;if(SR){micT(SR.start({language:'es-ES',maxResults:1,partialResults:true,popup:false}),15000).then(r=>{if(ok()&&r&&r.matches&&r.matches[0]){m.got=true;put(r.matches[0])}}).catch(()=>{if(ok())onEnd()})}else{try{m.r.start()}catch(e){onEnd()}}};
+ if(SR){const a=await micT(SR.available());if(!ok())return;if(!a||!a.available)throw new Error('el reconocimiento de voz no está disponible en este móvil');
+  if(!MICP){const p=await micT(SR.requestPermissions(),60000);if(!ok())return;if(p&&p.speechRecognition&&p.speechRecognition!=='granted')throw new Error('permite el micrófono en los permisos de la app');MICP=true}
+  try{await micT(SR.removeAllListeners(),700)}catch(e){}if(!ok())return;
+  await micT(SR.addListener('partialResults',d=>{if(ok()&&d&&d.matches&&d.matches[0]){m.got=true;put(d.matches[0])}}));await micT(SR.addListener('listeningState',d=>{if(d&&d.status==='stopped')onEnd()}));if(!ok())return;
+  m.poll=setInterval(async()=>{if(!ok())return;if(!document.body.contains(btn)||!document.body.contains(ta))return micStop();try{const l=await micT(SR.isListening(),1500);if(ok()&&l&&l.listening===false&&Date.now()-m.t>1500)onEnd()}catch(e){}},700);go();return}
+ const W=window.SpeechRecognition||window.webkitSpeechRecognition;if(!W)throw new Error('no disponible en este dispositivo');
+ const r=new W();r.lang='es-ES';r.interimResults=true;r.continuous=true;r.onresult=e=>{let t='';for(const x of e.results)t+=x[0].transcript;m.got=true;put(t)};r.onend=onEnd;r.onerror=()=>{};m.r=r;go()}
 function micAttach(){document.querySelectorAll('#app textarea').forEach(t=>{const n=t.nextElementSibling;if(n&&n.classList.contains('mic'))return;const b=document.createElement('button');b.type='button';b.className='mic';b.innerHTML=ic('mic',16)+'<span> Dictar</span>';b.onclick=()=>micToggle(b);t.after(b)})}
 new MutationObserver(()=>{if(micAttach._r)return;micAttach._r=requestAnimationFrame(()=>{micAttach._r=0;micAttach()})}).observe(document.getElementById('app'),{childList:true,subtree:true});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)micStop()});
