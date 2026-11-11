@@ -8,7 +8,7 @@ window.generarReplanteo=async function(o){
   const side=`FTTH Digi_${o.num} ${nameT} - MIGA ${o.miga}`;
   JSZip.defaults.createFolders=false;
   const zip=await JSZip.loadAsync(window.REPLANTEO_TPL,{base64:true});
-  const rep=s=>s.split('{{SIDE}}').join(H.esc(side)).split('{{NAMEU}}').join(H.esc(nameU)).split('{{NAMET}}').join(H.esc(nameT)).split('{{NUM}}').join(H.esc(o.num)).split('{{MIGA}}').join(H.esc(o.miga)).split('{{FECHA}}').join(`${p2(d.getDate())}/${p2(d.getMonth()+1)}/${d.getFullYear()}`).split('{{MESANIO}}').join(H.MESES[d.getMonth()].toUpperCase()+' '+d.getFullYear()).split('{{REAL}}').join(H.esc(o.real||''));
+  const rep=s=>s.split('{{SIDE}}').join(H.esc(side)).split('{{NAMEU}}').join(H.esc(nameU)).split('{{NAMET}}').join(H.esc(nameT)).split('{{NUM}}').join(H.esc(o.num)).split('{{MIGA}}').join(H.esc(o.miga)).split('{{FECHA}}').join(`${p2(d.getDate())}/${p2(d.getMonth()+1)}/${d.getFullYear()}`).split('{{MESANIO}}').join(H.MESES[d.getMonth()].toUpperCase()+' '+d.getFullYear()).split('Marzo 2025').join(H.MESES[d.getMonth()][0].toUpperCase()+H.MESES[d.getMonth()].slice(1).toLowerCase()+' '+d.getFullYear()).split('{{REAL}}').join(H.esc(o.real||''));
   for(const p of Object.keys(zip.files)){if(/^(ppt\/slideLayouts\/slideLayout\d+\.xml|ppt\/slideMasters\/slideMaster\d+\.xml|ppt\/slides\/slide[123]\.xml|docProps\/app\.xml)$/.test(p)){let x=rep(await zip.file(p).async('string'));
     if(/slide2\.xml$/.test(p))x=x.replace(/<a:br>[\s\S]*?<\/a:br>/g,'</a:p><a:p>');
     if(/slide3\.xml$/.test(p)&&o.titles&&o.titles.length){const ps=o.titles.map(t=>'<a:p><a:r><a:rPr lang="es-ES" sz="2000" dirty="0"/><a:t>'+H.esc(String(t).replace(/[.\s]+$/,'')+'.')+'</a:t></a:r></a:p>').join('');x=x.replace(/(<a:lvl1pPr marL="342900" indent="-342900"><a:lnSpc><a:spcPts val=")3500/,'$13000').replace(/(<\/a:lvl1pPr><\/a:lstStyle>)(?:<a:p>[\s\S]*?<\/a:p>)+(<\/p:txBody><\/p:sp><\/p:spTree>)/,'$1'+ps+'$2')}
@@ -41,6 +41,20 @@ window.generarReplanteo=async function(o){
         x=x.replace(m[0],lines.map(l=>para.replace(tk,H.esc(l))).join(''))}}
     x=x.replace('</p:spTree>',add+'</p:spTree>');r=r.replace('</Relationships>',rels+'</Relationships>');
     zip.file(sp,x);zip.file(rp,r)
+  }
+  if(o.obs&&o.obs.length){
+    let x=rep(await zip.file('ppt/slides/slide3.xml').async('string'));
+    const n=o.obs.length,sz=n>12?1400:n>9?1600:n>6?1800:2000;
+    const ps=o.obs.map(t=>'<a:p><a:r><a:rPr lang="es-ES" sz="'+sz+'" dirty="0"/><a:t>'+H.esc(t)+'</a:t></a:r></a:p>').join('');
+    x=x.replace(/<a:buAutoNum type="arabicPeriod"\/>/,'<a:buChar char="•"/>').replace(/(<a:lvl1pPr marL="342900" indent="-342900"><a:lnSpc><a:spcPts val=")3500/,'$1'+Math.round(sz*1.5));
+    x=x.replace(/(<\/a:lvl1pPr><\/a:lstStyle>)(?:<a:p>[\s\S]*?<\/a:p>)+(<\/p:txBody><\/p:sp><\/p:spTree>)/,'$1'+ps+'$2');
+    x=x.replace('<a:off x="2736325" y="1413964"/><a:ext cx="9267753" cy="2336537"/>','<a:off x="982663" y="1413964"/><a:ext cx="10700000" cy="2336537"/>');
+    x=x.replace(/(name="Subtitle 1".*?<a:ext cx=")1618130(" cy="964671"\/>.*?<a:lstStyle\/>)<a:p>.*?<\/a:p>/s,'$18000000$2<a:p><a:r><a:rPr lang="es-ES" b="1" dirty="0"/><a:t>OBSERVACIONES</a:t></a:r></a:p>');
+    zip.file('ppt/slides/slide13.xml',x);
+    zip.file('ppt/slides/_rels/slide13.xml.rels',await zip.file('ppt/slides/_rels/slide3.xml.rels').async('string'));
+    let ct=await zip.file('[Content_Types].xml').async('string');zip.file('[Content_Types].xml',ct.replace('</Types>','<Override PartName="/ppt/slides/slide13.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/></Types>'));
+    let pr=await zip.file('ppt/_rels/presentation.xml.rels').async('string');zip.file('ppt/_rels/presentation.xml.rels',pr.replace('</Relationships>','<Relationship Id="rId900" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide13.xml"/></Relationships>'));
+    let pp=await zip.file('ppt/presentation.xml').async('string');zip.file('ppt/presentation.xml',pp.replace('<p:sldId id="425" r:id="rId17"/>','<p:sldId id="900" r:id="rId900"/><p:sldId id="425" r:id="rId17"/>'));
   }
   return await zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.presentationml.presentation',compression:'DEFLATE',compressionOptions:{level:3}});
 };

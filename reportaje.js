@@ -43,7 +43,7 @@ window._rh={prep,layout,esc,titulo,MESES};
 window.generarReportaje=async function(o){
   // o: {site,dcim,se,photos:[[Blob]],na:[bool],date:Date}
   const d=o.date||new Date(),name=titulo(o.site);
-  const side=`FTTH Digi_${o.se} ${o.dcim}-${name}`;
+  const side=`FTTH Digi_${o.dcim}-${name}`;
   JSZip.defaults.createFolders=false;const zip=await JSZip.loadAsync(window.REPORTAJE_TPL,{base64:true});
   const rep=s=>s.split('{{SIDE}}').join(esc(side)).split('{{DCIM}}').join(esc(o.dcim)).split('{{NAME}}').join(esc(name)).split('{{MES}}').join(MESES[d.getMonth()]).split('{{ANIO}}').join(String(d.getFullYear()));
   for(const p of Object.keys(zip.files)){if(/^(ppt\/slideLayouts\/slideLayout\d+\.xml|ppt\/slides\/slide1\.xml|docProps\/app\.xml)$/.test(p)){zip.file(p,rep(await zip.file(p).async('string')))}}
