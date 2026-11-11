@@ -58,5 +58,5 @@ window.generarReplanteo=async function(o){
   }
   return await zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.presentationml.presentation',compression:'DEFLATE',compressionOptions:{level:3}});
 };
-window.replanteoNombre=function(o){const d=o.fecha||new Date(),p=n=>String(n).padStart(2,'0');return `${String(d.getFullYear()).slice(2)}${p(d.getMonth()+1)}${p(d.getDate())}_Replanteo_Huella_SE-${H.titulo(o.name).replace(/\s+/g,'_')}.pptx`};
+window.replanteoNombre=function(o){const d=o.fecha||new Date(),p=n=>String(n).padStart(2,'0');return `${String(d.getFullYear()).slice(2)}${p(d.getMonth()+1)}${p(d.getDate())}_Replanteo_Huella_${o.miga?String(o.miga).replace(/\s+/g,'')+'_':''}SE-${H.titulo(o.name).replace(/\s+/g,'_')}.pptx`};
 })();

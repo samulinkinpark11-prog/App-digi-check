@@ -110,5 +110,5 @@ window.generarReportaje=async function(o){
     x=x.replace(/<a:p><a:r><a:rPr[^>]*\/><a:t>\{\{OBS\}\}<\/a:t><\/a:r><\/a:p>/,paras);zip.file('ppt/slides/slide19.xml',x)}
   return await zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.presentationml.presentation',compression:'DEFLATE',compressionOptions:{level:3}});
 };
-window.reportajeNombre=function(o){const d=o.date||new Date(),p=n=>String(n).padStart(2,'0');return `${String(d.getFullYear()).slice(2)}${p(d.getMonth()+1)}${p(d.getDate())}_REGISTRO_FOTOGRAFICO_${o.site.replace(/\s+/g,'_')}_${o.dcim}.pptx`};
+window.reportajeNombre=function(o){const d=o.date||new Date(),p=n=>String(n).padStart(2,'0');return `${String(d.getFullYear()).slice(2)}${p(d.getMonth()+1)}${p(d.getDate())}_REGISTRO_FOTOGRAFICO_${o.site.replace(/\s+/g,'_')}_${String(o.type||o.dcim).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[\\/:*?"<>|]/g,'').trim().replace(/\s+/g,'_')}.pptx`};
 })();
