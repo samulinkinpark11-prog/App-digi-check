@@ -28,7 +28,11 @@ jobs:
       - name: Version y firma fija
         run: |
           VER=$(node -p "require('./package.json').version")
-          sed -i "s/versionCode 1/versionCode ${{ github.run_number }}/; s/versionName \"1.0\"/versionName \"$VER\"/" android/app/build.gradle
+          VC=$(( $(date +%s) / 60 ))
+          BLD=$(date -u +%y%m%d.%H%M)
+          sed -i "s/versionCode 1/versionCode $VC/; s/versionName \"1.0\"/versionName \"$VER\"/" android/app/build.gradle
+          grep -n "versionCode\|versionName" android/app/build.gradle
+          sed -i "s/__BUILD__/$BLD/g; s/__VER__/$VER/g" www/index.html
           mkdir -p ~/.android
           cp dcdigicheck-debug.keystore ~/.android/debug.keystore
       - run: npx cap sync android
